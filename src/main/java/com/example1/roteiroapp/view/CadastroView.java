@@ -52,9 +52,10 @@ public class CadastroView {
                         senha
                 );
 
-                PrincipalView principalView = new PrincipalView(user);
+                LoginView loginView =
+                        new LoginView();
 
-                principalView.mostrar(stage);
+                loginView.mostrar(stage);
             }
 
 

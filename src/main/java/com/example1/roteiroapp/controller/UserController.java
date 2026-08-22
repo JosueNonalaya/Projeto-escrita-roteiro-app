@@ -23,15 +23,10 @@ public class UserController {
 
     public User login(String email, String senha) {
 
-        List<User> users = userDAO.listarTodos();
+        User user = userDAO.buscarPorEmail(email);
 
-        for (User user : users) {
-
-            if (user.getEmail().equals(email)
-                    && user.getSenha().equals(senha)) {
-
-                return user;
-            }
+        if (user != null && user.getSenha().equals(senha)) {
+            return user;
         }
 
         return null;

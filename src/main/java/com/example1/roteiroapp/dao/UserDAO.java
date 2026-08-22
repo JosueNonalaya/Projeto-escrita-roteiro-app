@@ -1,116 +1,86 @@
 package com.example1.roteiroapp.dao;
-
+import com.example1.roteiroapp.database.ConnectionFactory;
 import com.example1.roteiroapp.model.User;
 
-import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class UserDAO {
-
-    private static final String ARQUIVO = "dados/users.dat";
-
-    private List<User> lerArquivo() {
-
-        File arquivo = new File(ARQUIVO);
-
-        if (!arquivo.exists()) {
-            return new ArrayList<>();
-        }
-
-        try (ObjectInputStream ois =
-                     new ObjectInputStream(new FileInputStream(arquivo))) {
-
-            return (List<User>) ois.readObject();
-
-        } catch (EOFException e) {
-
-            return new ArrayList<>();
-
-        } catch (IOException | ClassNotFoundException e) {
-
-            throw new RuntimeException("Erro ao carregar usuários", e);
-        }
-    }
-
-    private void gravarArquivo(List<User> users) {
-
-        try {
-
-            File pasta = new File("dados");
-
-            if (!pasta.exists()) {
-                pasta.mkdirs();
-            }
-
-            try (ObjectOutputStream oos =
-                         new ObjectOutputStream(new FileOutputStream(ARQUIVO))) {
-
-                oos.writeObject(users);
-            }
-
-        } catch (IOException e) {
-
-            throw new RuntimeException("Erro ao salvar usuários", e);
-        }
-    }
-
     // CREATE
     public void inserir(User user) {
 
-        List<User> users = lerArquivo();
+        String sql = """
+                INSERT INTO user (nome, idade, email, senha)
+                VALUES (?, ?, ?, ?)
+                """;
 
-        user.setId(gerarNovoId(users));
+        try (Connection connection = ConnectionFactory.conectar();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
 
-        users.add(user);
+            statement.setString(1, user.getNome());
+            statement.setInt(2, user.getIdade());
+            statement.setString(3, user.getEmail());
+            statement.setString(4, user.getSenha());
 
-        gravarArquivo(users);
+            statement.executeUpdate();
+
+        } catch (SQLException e) {
+            throw new RuntimeException(
+                    "Erro ao cadastrar usuário.",
+                    e
+            );
+        }
     }
 
+
     // READ
-    public List<User> listarTodos() {
-        return lerArquivo();
+    public User buscarPorEmail(String email) {
+
+        String sql = """
+                SELECT id, nome, idade, email, senha
+                FROM user
+                WHERE email = ?
+                """;
+
+        try (Connection connection = ConnectionFactory.conectar();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            statement.setString(1, email);
+
+            try (ResultSet result = statement.executeQuery()) {
+
+                if (result.next()) {
+
+                    User user = new User(
+                            result.getString("nome"),
+                            result.getInt("idade"),
+                            result.getString("email"),
+                            result.getString("senha")
+                    );
+
+                    user.setId(result.getInt("id"));
+
+                    return user;
+                }
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException(
+                    "Erro ao carregar usuários.",
+                    e
+            );
+        }
+
+        return null;
     }
 
     // UPDATE
-    public void atualizar(User userAtualizado) {
 
-        List<User> users = lerArquivo();
-
-        for (int i = 0; i < users.size(); i++) {
-
-            User user = users.get(i);
-
-            if (user.getId() == userAtualizado.getId()) {
-
-                users.set(i, userAtualizado);
-                gravarArquivo(users);
-                return;
-            }
-        }
-    }
 
     // DELETE
-    public void excluir(int id) {
 
-        List<User> users = lerArquivo();
 
-        users.removeIf(user -> user.getId() == id);
 
-        gravarArquivo(users);
-    }
-
-    private int gerarNovoId(List<User> users) {
-
-        int maiorId = 0;
-
-        for (User user : users) {
-
-            if (user.getId() > maiorId) {
-                maiorId = user.getId();
-            }
-        }
-
-        return maiorId + 1;
-    }
 }

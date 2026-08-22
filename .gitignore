@@ -5,7 +5,7 @@ target/
 .kotlin
 
 # Dados gerados pela aplicação
-dados/
+dados/roteiro.db
 
 # IntelliJ
 .idea/
